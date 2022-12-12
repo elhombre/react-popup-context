@@ -1,20 +1,24 @@
-import React, { createContext, FC, PropsWithChildren, useCallback, useContext, useReducer } from 'react'
+import React, { createContext, FC, Fragment, PropsWithChildren, useCallback, useContext, useReducer } from 'react'
 import { createPortal } from 'react-dom'
 import { generateId } from './helpers'
 import { popupContextReducer } from './popup-context-reducer'
 import { IPopupContainer, IPopupProps, IPopupState } from './popup-types'
 
-export interface IPopupCreateProps<P, R> extends IPopupProps<P, R> {
-  resolve(result?: R | PromiseLike<R>): void
-}
+export type IPopupContextProviderProps = PropsWithChildren
 
-export interface IPopupContext {
+interface IPopupContext {
   readonly activePopup?: IPopupState
   closePopup(id: string): void
   createPopup<P, R>(props: IPopupCreateProps<P, R>): string
 }
 
-export type IPopupContextProviderProps = PropsWithChildren
+interface IPopupCreateProps<P, R> extends IPopupProps<P, R> {
+  resolve(result?: R | PromiseLike<R>): void
+}
+
+interface IPopupCreateRendererProps<P, R> extends IPopupCreateProps<P, R> {
+  close(): void
+}
 
 interface IPopupNodesProps extends IPopupContainer {
   readonly currentId?: string
@@ -26,17 +30,38 @@ const PopupNodes: FC<IPopupNodesProps> = ({ popups: childPopups, currentId }) =>
   <>
     {
       childPopups && childPopups.map(popup => (
-        <div key={popup.id}>
+        <Fragment key={popup.id}>
           {popup.render(currentId)}
           <PopupNodes
             popups={popup.popups}
             currentId={popup.id}
           />
-        </div>
+        </Fragment>
       ))
     }
   </>
 )
+
+const createPopupRenderer = <P, R>({ close, contentProps, contentRenderer, resolve, timeout }: IPopupCreateRendererProps<P, R>) => {
+  if (timeout) {
+    setTimeout(() => {
+      resolve()
+      close()
+    }, timeout)
+  }
+
+  return (currentId: string) => createPortal(
+    contentRenderer({
+      contentProps,
+      currentId,
+      resolve: result => {
+        resolve(result)
+        close()
+      }
+    }),
+    document.querySelector('#modal') as Element
+  )
+}
 
 const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
   const [ state, dispatch ] = useReducer(popupContextReducer, { popups: [] })
@@ -47,7 +72,7 @@ const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
     type: 'closePopup'
   }), [])
 
-  const createPopup = <P, R>({ contentProps, contentRenderer, resolve }: IPopupCreateProps<P, R>) => {
+  const createPopup = <P, R>(props: IPopupCreateProps<P, R>) => {
     const id = generateId()
 
     dispatch({
@@ -55,17 +80,10 @@ const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
       popupState: {
         popups: [],
         id,
-        render: (currentId: string) => createPortal(
-          contentRenderer({
-            contentProps,
-            currentId,
-            resolve: result => {
-              resolve(result)
-              closePopup(id)
-            }
-          }),
-          document.querySelector('#modal') as Element
-        )
+        render: createPopupRenderer({
+          ...props,
+          close: () => closePopup(id)
+        })
       }
     })
     return id

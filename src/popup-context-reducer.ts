@@ -57,15 +57,17 @@ export const popupContextReducer: Reducer<IPopupContextState, PopupContextAction
     case 'closePopup': {
       const { id } = action
       const popup = findById(prevState, id)
-      if (!popup) {
-        throw new Error(`Popup with id "${id}" not found`)
+      if (popup) {
+        const xs = popup.parent?.popups
+        return {
+          ...removePopupNode(prevState, id),
+          active: isAncestorOrSelf(popup, active)
+            ? (xs && xs.length ? xs[xs.length - 1] : popup.parent) as IPopupState
+            : active
+        }
       }
-      const xs = popup.parent?.popups
-      return {
-        ...removePopupNode(prevState, id),
-        active: isAncestorOrSelf(popup, active)
-          ? (xs && xs.length ? xs[xs.length - 1] : popup.parent) as IPopupState
-          : active
+      else {
+        return prevState
       }
     }
 
