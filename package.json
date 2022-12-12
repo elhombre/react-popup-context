@@ -1,0 +1,35 @@
+{
+  "author": "elhombre <elhombre.dev@gmail.com>",
+  "description": "React popups",
+  "dependencies": {
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "dts-bundle-generator": "latest",
+    "esbuild": "latest",
+    "esbuild-node-externals": "latest",
+    "ts-node": "latest",
+    "typescript": "latest"
+  },
+  "license": "MIT",
+  "name": "react-popup-context",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com:elhombre/react-popup-context.git"
+  },
+  "scripts": {
+    "build": "ts-node esbuild.config.ts && dts-bundle-generator -o dist/index.d.ts src/index.ts",
+    "clean": "rm -rf build dist",
+    "prepare": "npm run clean && npm run build-production",
+    "test": "jest"
+  },
+  "types": "dist/index.d.ts",
+  "version": "0.0.1"
+}
