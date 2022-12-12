@@ -1,4 +1,4 @@
-import React, { createContext, FC, Fragment, PropsWithChildren, useCallback, useContext, useReducer } from 'react'
+import { createContext, FC, Fragment, PropsWithChildren, useCallback, useContext, useReducer, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { generateId } from './helpers'
 import { popupContextReducer } from './popup-context-reducer'
@@ -17,6 +17,7 @@ interface IPopupCreateProps<P, R> extends IPopupProps<P, R> {
 }
 
 interface IPopupCreateRendererProps<P, R> extends IPopupCreateProps<P, R> {
+  readonly element: Element
   close(): void
 }
 
@@ -42,7 +43,7 @@ const PopupNodes: FC<IPopupNodesProps> = ({ popups: childPopups, currentId }) =>
   </>
 )
 
-const createPopupRenderer = <P, R>({ close, contentProps, contentRenderer, resolve, timeout }: IPopupCreateRendererProps<P, R>) => {
+const createPopupRenderer = <P, R>({ close, contentProps, contentRenderer, element, resolve, timeout }: IPopupCreateRendererProps<P, R>) => {
   if (timeout) {
     setTimeout(() => {
       resolve()
@@ -59,13 +60,14 @@ const createPopupRenderer = <P, R>({ close, contentProps, contentRenderer, resol
         close()
       }
     }),
-    document.querySelector('#modal') as Element
+    element
   )
 }
 
 const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
   const [ state, dispatch ] = useReducer(popupContextReducer, { popups: [] })
   const { popups } = state
+  const ref = useRef<HTMLDivElement>(null)
 
   const closePopup = useCallback((id: string) => dispatch({
     id,
@@ -82,7 +84,8 @@ const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
         id,
         render: createPopupRenderer({
           ...props,
-          close: () => closePopup(id)
+          close: () => closePopup(id),
+          element: ref.current as Element
         })
       }
     })
@@ -94,8 +97,9 @@ const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
       closePopup,
       createPopup
     }}>
-      <PopupNodes popups={popups} />
+      <div ref={ref}/>
       {children}
+      <PopupNodes popups={popups} />
     </PopupContext.Provider>
   )
 }
