@@ -1,3 +1,5 @@
+export { default as PopupContextProvider } from './popup-context'
+export { default as usePopup } from './use-popup'
 export * from './popup-context'
 export * from './popup-types'
 export * from './use-popup'

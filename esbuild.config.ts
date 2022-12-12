@@ -1,7 +1,7 @@
-import esbuild from 'esbuild';
-import { nodeExternalsPlugin } from 'esbuild-node-externals';
+import esbuild, { BuildOptions } from 'esbuild'
+import { nodeExternalsPlugin } from 'esbuild-node-externals'
 
-esbuild.build({
+const options: BuildOptions = {
   bundle: true,
   entryPoints: ['./src/index.ts'],
   minify: true,
@@ -10,4 +10,15 @@ esbuild.build({
   plugins: [nodeExternalsPlugin()],
   sourcemap: true,
   target: 'node16'
+}
+
+esbuild.build({
+  ...options,
+  outfile: 'dist/index.js',
+})
+
+esbuild.build({
+  ...options,
+  format: 'esm',
+  outfile: 'dist/index.esm.js'
 })
