@@ -7,6 +7,8 @@ export interface IPopupContentRendererProps<P, R> {
 
 export type PopupContentRenderer<P, R> = (props: IPopupContentRendererProps<P, R>) => JSX.Element
 
+export type PopupType = 'Standard' | 'Detached' | 'Modal'
+
 export interface IPopupNode {
   readonly id?: string
   readonly parent?: IPopupNode
@@ -14,13 +16,13 @@ export interface IPopupNode {
 }
 
 export interface IPopupState extends IPopupNode {
+  readonly type: PopupType
   render(currentId?: string): JSX.Element
 }
 
 export interface IPopupProps<P, R> {
   readonly contentProps?: P
   readonly contentRenderer: PopupContentRenderer<P, R>
-  readonly isDetached?: boolean
-  readonly isModal?: boolean
   readonly timeout?: number
+  readonly type?: PopupType
 }

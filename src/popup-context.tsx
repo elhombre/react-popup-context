@@ -67,6 +67,10 @@ const createPopupRenderer = <P, R>({ close, contentProps, contentRenderer, eleme
 const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
   const [ state, dispatch ] = useReducer(popupContextReducer, { popups: [] })
   const { popups } = state
+
+  console.log('==========')
+  console.log(JSON.stringify(state, null, '  '))
+
   const ref = useRef<HTMLDivElement>(null)
 
   const closePopup = useCallback((id: string) => dispatch({
@@ -86,7 +90,8 @@ const PopupContextProvider: FC<IPopupContextProviderProps> = ({ children }) => {
           ...props,
           close: () => closePopup(id),
           element: ref.current as Element
-        })
+        }),
+        type: props.type || 'Standard'
       }
     })
     return id

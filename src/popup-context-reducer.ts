@@ -9,47 +9,39 @@ type PopupContextActions =
   | { type: 'closePopup', id: string }
   | { type: 'createPopup', popupState: IPopupState, parentId?: string }
 
-export const findById = (node: IPopupNode, id: string): IPopupState | undefined => {
-  const { popups } = node
-  const index = popups.findIndex(p => p.id === id)
-  if (index >= 0) {
-    return popups[index]
-  }
-  else {
-    for (const popup of popups) {
-      const result = findById(popup, id)
-      if (result) {
-        return result
-      }
-    }
-    return undefined
-  }
-}
+export const findById = ({ popups }: IPopupNode, id: string, index = popups.findIndex(p => p.id === id)): IPopupState | undefined => (
+  index >= 0
+    ? popups[index]
+    : popups.reduce<IPopupState | undefined>((found, popup) => found || findById(popup, id), undefined)
+)
 
-const insertPopupNode = (node: IPopupNode, state: IPopupState, parent?: IPopupState): IPopupNode => {
-  const { popups } = node
-  return {
-    ...node,
-    popups: node.id === parent?.id
-      ? [ ...popups, state ]
-      : popups.reduce<IPopupState[]>((xs, popup) => [ ...xs, insertPopupNode(popup, state, parent) as IPopupState ], [])
-  }
-}
+const insertPopupNode = ({ id, popups, ...rest }: IPopupNode, state: IPopupState, parent?: IPopupState): IPopupNode => ({
+  ...rest,
+  id,
+  popups: id === parent?.id
+    ? [ ...popups, state ]
+    : popups.reduce<IPopupState[]>((xs, popup) => [ ...xs, insertPopupNode(popup, state, parent) as IPopupState ], [])
+})
 
 const isAncestorOrSelf = (target?: IPopupNode, node?: IPopupNode): boolean => (
   (target && node) ? (node.id === target.id || isAncestorOrSelf(target, node.parent)) : false
 )
 
-const removePopupNode = (node: IPopupNode, id: string): IPopupNode => {
-  const { popups } = node
-  const index = popups.findIndex(p => p.id === id)
-  return {
-    ...node,
-    popups: index >= 0
-      ? [ ...popups.slice(0, index), ...popups.slice(index + 1) ]
-      : popups.reduce<IPopupState[]>((xs, popup) => [ ...xs, removePopupNode(popup, id) as IPopupState ], [])
-  }
-}
+const maybeActive = (popup?: IPopupState) => popup && popup.type !== 'Detached' ? popup : undefined
+
+const removePopupNode = ({ popups, ...rest }: IPopupNode, id: string, index = popups.findIndex(p => p.id === id)): IPopupNode => ({
+  ...rest,
+  popups: index >= 0
+    ? [ ...popups.slice(0, index), ...popups.slice(index + 1) ]
+    : popups.reduce<IPopupState[]>((xs, popup) => [ ...xs, removePopupNode(popup, id) as IPopupState ], [])
+})
+
+// The active popup can be removed from a different location than the current one,
+// so there must be a way to look for a new active one among all popups.
+// If the popup was active, then its parent is also active, or absent
+const findNextActive = (root: IPopupNode, prevActive?: IPopupState, popups = prevActive?.parent?.popups): IPopupState | undefined => prevActive
+  ? popups?.reduceRight((active, popup) => active || maybeActive(popup)) || prevActive.parent as IPopupState
+  : root.popups.reduceRight((active, popup) => active || maybeActive(popup) || findNextActive(popup))
 
 export const popupContextReducer: Reducer<IPopupContextState, PopupContextActions> = (prevState, action): IPopupContextState => {
   const { active } = prevState
@@ -57,29 +49,24 @@ export const popupContextReducer: Reducer<IPopupContextState, PopupContextAction
     case 'closePopup': {
       const { id } = action
       const popup = findById(prevState, id)
-      if (popup) {
-        const xs = popup.parent?.popups
-        return {
+      return popup
+        ? {
           ...removePopupNode(prevState, id),
-          active: isAncestorOrSelf(popup, active)
-            ? (xs && xs.length ? xs[xs.length - 1] : popup.parent) as IPopupState
-            : active
+          active: isAncestorOrSelf(popup, active) ? findNextActive(prevState, popup) : active
         }
-      }
-      else {
-        return prevState
-      }
+        : prevState
     }
 
     case 'createPopup': {
       const { popupState } = action
+      const isDetached = popupState.type === 'Detached'
       const popup = {
         ...popupState,
-        parent: active
+        parent: isDetached ? undefined : active
       }
       return {
         ...insertPopupNode(prevState, popup, active),
-        active: popup,
+        active: isDetached ? active : popup
       }
     }
   }
