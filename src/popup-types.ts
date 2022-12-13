@@ -7,13 +7,13 @@ export interface IPopupContentRendererProps<P, R> {
 
 export type PopupContentRenderer<P, R> = (props: IPopupContentRendererProps<P, R>) => JSX.Element
 
-export interface IPopupContainer {
+export interface IPopupNode {
   readonly id?: string
-  readonly parent?: IPopupContainer
+  readonly parent?: IPopupNode
   readonly popups: IPopupState[]
 }
 
-export interface IPopupState extends IPopupContainer {
+export interface IPopupState extends IPopupNode {
   render(currentId?: string): JSX.Element
 }
 

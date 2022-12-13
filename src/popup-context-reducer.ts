@@ -1,7 +1,7 @@
 import { Reducer } from 'react'
-import { IPopupContainer, IPopupState } from './popup-types'
+import { IPopupNode, IPopupState } from './popup-types'
 
-interface IPopupContextState extends IPopupContainer {
+interface IPopupContextState extends IPopupNode {
   readonly active?: IPopupState
 }
 
@@ -9,7 +9,7 @@ type PopupContextActions =
   | { type: 'closePopup', id: string }
   | { type: 'createPopup', popupState: IPopupState, parentId?: string }
 
-export const findById = (node: IPopupContainer, id: string): IPopupState | undefined => {
+export const findById = (node: IPopupNode, id: string): IPopupState | undefined => {
   const { popups } = node
   const index = popups.findIndex(p => p.id === id)
   if (index >= 0) {
@@ -26,7 +26,7 @@ export const findById = (node: IPopupContainer, id: string): IPopupState | undef
   }
 }
 
-const insertPopupNode = (node: IPopupContainer, state: IPopupState, parent?: IPopupState): IPopupContainer => {
+const insertPopupNode = (node: IPopupNode, state: IPopupState, parent?: IPopupState): IPopupNode => {
   const { popups } = node
   return {
     ...node,
@@ -36,11 +36,11 @@ const insertPopupNode = (node: IPopupContainer, state: IPopupState, parent?: IPo
   }
 }
 
-const isAncestorOrSelf = (target?: IPopupContainer, node?: IPopupContainer): boolean => (
+const isAncestorOrSelf = (target?: IPopupNode, node?: IPopupNode): boolean => (
   (target && node) ? (node.id === target.id || isAncestorOrSelf(target, node.parent)) : false
 )
 
-const removePopupNode = (node: IPopupContainer, id: string): IPopupContainer => {
+const removePopupNode = (node: IPopupNode, id: string): IPopupNode => {
   const { popups } = node
   const index = popups.findIndex(p => p.id === id)
   return {

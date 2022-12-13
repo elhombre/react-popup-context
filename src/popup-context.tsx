@@ -2,7 +2,7 @@ import { createContext, FC, Fragment, PropsWithChildren, useCallback, useContext
 import { createPortal } from 'react-dom'
 import { generateId } from './helpers'
 import { popupContextReducer } from './popup-context-reducer'
-import { IPopupContainer, IPopupProps, IPopupState } from './popup-types'
+import { IPopupNode, IPopupProps, IPopupState } from './popup-types'
 
 export type IPopupContextProviderProps = PropsWithChildren
 
@@ -21,7 +21,7 @@ interface IPopupCreateRendererProps<P, R> extends IPopupCreateProps<P, R> {
   close(): void
 }
 
-interface IPopupNodesProps extends IPopupContainer {
+interface IPopupNodesProps extends IPopupNode {
   readonly currentId?: string
 }
 
